@@ -4,6 +4,11 @@ const uint8_t MIDI_STATUS_MASK = 0xf0;
 const uint8_t MIDI_CHANNEL_MASK = 0x0f;
 const uint8_t MIDI_STATUS_BYTE_MASK = 0xb10000000;
 
+void MIDIInput::start() 
+{
+  Serial.begin(31250);
+}
+
 void MIDIInput::parseStatusByte(char statusByte)
 {
   statusMsg.status = (int)(statusByte & MIDI_STATUS_MASK);
@@ -12,17 +17,17 @@ void MIDIInput::parseStatusByte(char statusByte)
   //Some data sizes are deterministic.  System messages in particular
   //are of variable length.  This only indicates the minimum number of
   //data bytes to expect
-  switch (statusMessage.status)
+  switch (statusMsg.status)
   {
   case MIDI_SYSTEM:
-    statusMessage.len = 0;
+    statusMsg.len = 0;
     break;
   case MIDI_PROGCH:
   case MIDI_CHPRESS:
-    statusMessage.len = 1;
+    statusMsg.len = 1;
     break;
   default:
-    statusMessage.len = 2;
+    statusMsg.len = 2;
     break;
   }
 }
@@ -46,9 +51,9 @@ void MIDIInput::readPendingEvent(bool *didRead)
       continue;
     }
 
-    parseStatusByte(c, midiVal);
+    parseStatusByte(midiVal);
     //Ensure the serial buffer contains the data bytes
-    if (Serial.available() >= c->len)
+    if (Serial.available() >= statusMsg.len)
     {
       *didRead = true;
       break;
@@ -56,7 +61,7 @@ void MIDIInput::readPendingEvent(bool *didRead)
     else
     {
       //We don't have the required data bytes yet.  Bail.
-      reset();
+      statusMsg.reset();
       return;
     }
   }
@@ -68,17 +73,17 @@ void MIDIInput::readPendingEvent(bool *didRead)
   //This doesn't allow for continuations so it's poor implementation
   //but it's good enough for getting NOTE_ON messages which is all
   //we really care about.
-  for (uint8_t i = 0; i < statusMessage.len; i++)
+  for (uint8_t i = 0; i < statusMsg.len; i++)
   {
-    statusMessage.data[i] = Serial.read();
-  }
+    statusMsg.data[i] = Serial.read();  
+   }
 }
 
 //Returns true if midi commands were waiting.  You can call this in a loop until it
 //returns false to read queued midi events.
-bool MIDIInput::updateState()
+bool MIDIInput::readNextPendingEvent()
 {
   bool didRead = false;
-  checkMIDI(&didRead);
+  readPendingEvent(&didRead);
   return didRead;
 }

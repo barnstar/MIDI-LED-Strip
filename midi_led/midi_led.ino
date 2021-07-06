@@ -191,12 +191,12 @@ void loop()
             activeNotes[position].setRGB(0, 0, 0);
         }
         //Done with this status message
-        statusMsg->reset()
+        statusMsg->reset();
     }
 
     for (int i = 0; i < LED_COUNT; i++)
     {
-        double fadeVal = midiInput->sustainOn ? 0.99 : 0.97;
+        double fadeVal = midiInput.sustainOn ? 0.99 : 0.97;
         activeNotes[i].fade(fadeVal); //More magic.  This is quite sensitive.
         Pixel *p = backBuffer + i;
         p->combine(activeNotes + i, 1.0);

@@ -42,14 +42,14 @@ public:
         memset(data, 0, 2);
         len = 0;
     }
+
+    uint8_t velocity() { return data[1]; }
+    uint8_t pitch()    { return data[0]; }
 };
 
 class MIDIInput
 {
 public:
-    MIDIInput(void);
-    ~MIDIInput();
-
     //The last status message we read.  You can call reset on this to indicate that
     //the message was consumed.  This should never have a status of MIDI_NONE 
     //after readNextPendingEvent() returns true;
@@ -60,6 +60,8 @@ public:
 
     //Indicates the expression pedal level
     uint8_t expressionLevel = 127;
+
+    void start();
 
     //Returns true if midi commands were waiting.  You can call this in a loop until it
     //returns false to read queued midi events.
