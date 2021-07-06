@@ -30,7 +30,7 @@ void MIDIInput::parseStatusByte(char statusByte)
 /*
    * Reads a single midi message and returns it.  
    */
-void MIDIInput::checkMIDI(bool *didRead)
+void MIDIInput::readPendingEvent(bool *didRead)
 {
   *didRead = false;
 

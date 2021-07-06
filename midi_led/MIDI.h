@@ -47,8 +47,18 @@ public:
 class MIDIInput
 {
 public:
+    MIDIInput(void);
+    ~MIDIInput();
+
+    //The last status message we read.  You can call reset on this to indicate that
+    //the message was consumed.  This should never have a status of MIDI_NONE 
+    //after readNextPendingEvent() returns true;
     MidiStatusMessage statusMsg;
+
+    //Indicates if the sustain pedal is "on"
     bool sustainOn = false;
+
+    //Indicates the expression pedal level
     uint8_t expressionLevel = 127;
 
     //Returns true if midi commands were waiting.  You can call this in a loop until it
@@ -57,7 +67,7 @@ public:
 
 private:
     void parseStatusByte(char statusByte);
-    void checkMIDI(bool *didRead);
+    void readPendingEvent(bool *didRead);
 };
 
 #endif
