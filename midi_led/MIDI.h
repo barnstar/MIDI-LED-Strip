@@ -46,7 +46,7 @@ class MidiStatusMessage
 class MIDIInput
 {
 public:
-    MidiStatusMessage status;
+    MidiStatusMessage statusMsg;
     bool sustainOn = false;
     uint8_t expressionLevel = 127;
 
@@ -55,10 +55,10 @@ public:
     bool updateState();
 
     //Finds the next pending
-    void checkMIDI(bool *didRead, MidiCommand *c);
+    void checkMIDI(bool *didRead);
 
 private:
-    void parseStatusByte(MidiCommand *c, char statusByte);
+    void parseStatusByte(char statusByte);
 };
 
 #endif

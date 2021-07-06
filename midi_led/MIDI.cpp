@@ -1,37 +1,34 @@
-
-
 #include "MIDI.h"
 
 
-void MIDIInput::parseStatusByte(MidiCommand *c, char statusByte)
+void MIDIInput::parseStatusByte(char statusByte)
 {
   const uint8_t MIDI_STATUS_MASK = 0xf0;
   const uint8_t MIDI_CHANNEL_MASK = 0x0f;
 
   if ((statusByte & 0b10000000) == 0)
   {
-    c->reset(); //'null' command
     return;
   }
   else
   {
-    c->status = (int)(statusByte & MIDI_STATUS_MASK);
-    c->channel = statusByte & MIDI_CHANNEL_MASK;
+    statusMsg.status = (int)(statusByte & MIDI_STATUS_MASK);
+    statusMsg.channel = statusByte & MIDI_CHANNEL_MASK;
 
     //Some data sizes are deterministic.  System messages in particular
     //are of variable length.  This only indicates the minimum number of
     //data bytes to expect
-    switch (c->status)
+    switch (statusMessage.status)
     {
     case MIDI_SYSTEM:
-      c->len = 0;
+      statusMessage.len = 0;
       break;
     case MIDI_PROGCH:
     case MIDI_CHPRESS:
-      c->len = 1;
+      statusMessage.len = 1;
       break;
     default:
-      c->len = 2;
+      statusMessage.len = 2;
       break;
     }
   }
@@ -40,7 +37,7 @@ void MIDIInput::parseStatusByte(MidiCommand *c, char statusByte)
 /*
    * Reads a single midi message and returns it.  
    */
-void MIDIInput::checkMIDI(bool *didRead, MidiCommand *c)
+void MIDIInput::checkMIDI(bool *didRead)
 {
   *didRead = false;
 
@@ -66,7 +63,7 @@ void MIDIInput::checkMIDI(bool *didRead, MidiCommand *c)
     else
     {
       //We don't have the required data bytes yet.  Bail.
-      c->reset();
+      reset();
       return;
     }
   }
@@ -78,9 +75,9 @@ void MIDIInput::checkMIDI(bool *didRead, MidiCommand *c)
   //This doesn't allow for continuations so it's poor implementation
   //but it's good enough for getting NOTE_ON messages which is all
   //we really care about.
-  for (uint8_t i = 0; i < c->len; i++)
+  for (uint8_t i = 0; i < statusMessage.len; i++)
   {
-    c->data[i] = Serial.read();
+    statusMessage.data[i] = Serial.read();
   }
 }
 
@@ -89,6 +86,6 @@ void MIDIInput::checkMIDI(bool *didRead, MidiCommand *c)
 bool MIDIInput::updateState()
 {
   bool didRead = false;
-  checkMIDI(&didRead, &lastCommand);
+  checkMIDI(&didRead);
   return didRead;
 }
