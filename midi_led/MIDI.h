@@ -29,6 +29,7 @@ enum MIDIControl
 
 class MidiStatusMessage
 {
+public:
     MIDIStatus status = MIDI_NONE;
     uint8_t channel = 0;
     uint8_t data[2] = {0, 0};
@@ -52,13 +53,11 @@ public:
 
     //Returns true if midi commands were waiting.  You can call this in a loop until it
     //returns false to read queued midi events.
-    bool updateState();
-
-    //Finds the next pending
-    void checkMIDI(bool *didRead);
+    bool readNextPendingEvent();
 
 private:
     void parseStatusByte(char statusByte);
+    void checkMIDI(bool *didRead);
 };
 
 #endif

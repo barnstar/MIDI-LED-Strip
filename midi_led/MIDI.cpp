@@ -1,36 +1,29 @@
 #include "MIDI.h"
 
+const uint8_t MIDI_STATUS_MASK = 0xf0;
+const uint8_t MIDI_CHANNEL_MASK = 0x0f;
+const uint8_t MIDI_STATUS_BYTE_MASK = 0xb10000000;
 
 void MIDIInput::parseStatusByte(char statusByte)
 {
-  const uint8_t MIDI_STATUS_MASK = 0xf0;
-  const uint8_t MIDI_CHANNEL_MASK = 0x0f;
+  statusMsg.status = (int)(statusByte & MIDI_STATUS_MASK);
+  statusMsg.channel = statusByte & MIDI_CHANNEL_MASK;
 
-  if ((statusByte & 0b10000000) == 0)
+  //Some data sizes are deterministic.  System messages in particular
+  //are of variable length.  This only indicates the minimum number of
+  //data bytes to expect
+  switch (statusMessage.status)
   {
-    return;
-  }
-  else
-  {
-    statusMsg.status = (int)(statusByte & MIDI_STATUS_MASK);
-    statusMsg.channel = statusByte & MIDI_CHANNEL_MASK;
-
-    //Some data sizes are deterministic.  System messages in particular
-    //are of variable length.  This only indicates the minimum number of
-    //data bytes to expect
-    switch (statusMessage.status)
-    {
-    case MIDI_SYSTEM:
-      statusMessage.len = 0;
-      break;
-    case MIDI_PROGCH:
-    case MIDI_CHPRESS:
-      statusMessage.len = 1;
-      break;
-    default:
-      statusMessage.len = 2;
-      break;
-    }
+  case MIDI_SYSTEM:
+    statusMessage.len = 0;
+    break;
+  case MIDI_PROGCH:
+  case MIDI_CHPRESS:
+    statusMessage.len = 1;
+    break;
+  default:
+    statusMessage.len = 2;
+    break;
   }
 }
 
@@ -47,7 +40,7 @@ void MIDIInput::checkMIDI(bool *didRead)
     uint8_t midiVal = Serial.peek();
 
     //Not a status byte.  Discard it.
-    if ((midiVal & 0b10000000) == 0)
+    if ((midiVal & MIDI_STATUS_BYTE_MASK) == 0)
     {
       (void)Serial.read();
       continue;
