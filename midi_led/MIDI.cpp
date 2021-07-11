@@ -4,7 +4,7 @@ const uint8_t MIDI_STATUS_MASK = 0xf0;
 const uint8_t MIDI_CHANNEL_MASK = 0x0f;
 const uint8_t MIDI_STATUS_BYTE_MASK = 0b10000000;
 
-void MIDIInput::start() 
+void MIDIInput::start()
 {
   Serial.begin(31250);
 }
@@ -53,40 +53,40 @@ bool MIDIInput::readPendingEvent()
     //Ensure the serial buffer contains the data bytes
     if (Serial.available() < statusMsg.len)
     {
-     //We don't have the required data bytes yet.  Bail.
+      //We don't have the required data bytes yet.  Bail.
       statusMsg.reset();
       return false;
-    } 
-
-  //Pop the status byte we just peeked at.
-  (void)Serial.read();
-
-  //Read in the expected data bytes.
-  //This doesn't allow for continuations so it's poor implementation
-  //but it's good enough for getting NOTE_ON messages which is all
-  //we really care about.
-  for (uint8_t i = 0; i < statusMsg.len; i++)
-  {
-    statusMsg.data[i] = Serial.read();  
-   }
-   
-     if (statusMsg.status == MIDI_CONTROL) {
-       switch (statusMsg.data[0]) {
-          case MIDI_CTL_SUSTAIN:
-            sustainOn = (statusMsg.data[1] !=0);
-            break;
-          case MIDI_CTL_EXP:
-            expressionLevel = statusMsg.data[1];
-            break;
-          default:
-            break;
-       }
     }
-    
+
+    //Pop the status byte we just peeked at.
+    (void)Serial.read();
+
+    //Read in the expected data bytes.
+    //This doesn't allow for continuations so it's poor implementation
+    //but it's good enough for getting NOTE_ON messages which is all
+    //we really care about.
+    for (uint8_t i = 0; i < statusMsg.len; i++)
+    {
+      statusMsg.data[i] = Serial.read();
+    }
+
+    if (statusMsg.status == MIDI_CONTROL)
+    {
+      switch (statusMsg.data[0])
+      {
+      case MIDI_CTL_SUSTAIN:
+        sustainOn = (statusMsg.data[1] != 0);
+        break;
+      case MIDI_CTL_EXP:
+        expressionLevel = statusMsg.data[1];
+        break;
+      default:
+        break;
+      }
+    }
+
     break;
   }
-   
-   return true;
 
-   
+  return true;
 }
