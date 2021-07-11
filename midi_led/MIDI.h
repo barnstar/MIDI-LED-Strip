@@ -3,8 +3,6 @@
 
 #include <Arduino.h>
 
-typedef unsigned char uint8_t;
-
 enum MIDIStatus
 {
     MIDI_NONE = 0x00,
@@ -25,7 +23,9 @@ enum MIDIControl
     MIDI_CTL_SUSTAIN = 0x40,
 };
 
-#define SUSTAIN_ON 64
+enum MIDIValues {
+  SUSTAIN_ON = 64
+};
 
 class MidiStatusMessage
 {
@@ -65,11 +65,10 @@ public:
 
     //Returns true if midi commands were waiting.  You can call this in a loop until it
     //returns false to read queued midi events.
-    bool readNextPendingEvent();
+    bool readPendingEvent();
 
 private:
-    void parseStatusByte(char statusByte);
-    void readPendingEvent(bool *didRead);
+    void parseStatusByte(uint8_t statusByte);
 };
 
 #endif

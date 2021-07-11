@@ -1,10 +1,10 @@
 #include "Adafruit_NeoPixel.h"
 #include "MIDI.h"
 
-#define LED_CONTROL_PIN 13                //The LED control pin
-#define LED_COUNT 60                      //The number of LEDS in your strip.
-#define LEDS_PER_PITCH (LED_COUNT / 72.0) //A typical 60 LED strip covers 72 keys
-#define LED_START_PITCH 24                //Pitches below this will be ignored
+#define LED_CONTROL_PIN 13                        //The LED control pin
+#define LED_COUNT 100                             //The number of LEDS in your strip.
+#define LEDS_PER_PITCH ((double)LED_COUNT / 75.0) //A typical 90 LED strip covers 78 keys
+#define LED_START_PITCH 24                        //Pitches below this will be ignored 24 is C1
 
 //Arduino needs types defined up front
 struct Pixel;
@@ -58,6 +58,48 @@ typedef struct Pixel
         this->b = p->b;
     }
 
+    /*
+     * H is 0 to 360
+     * S and v should be normalized values (0-1)
+     */
+    void setHSV(uint16_t hue, float sat, float v)
+    {
+        float c = sat * v;
+        float x = c * (1 - abs(fmod(hue / 60.0, 2) - 1));
+        float m = v - c;
+
+        float _r, _g, _b;
+
+        if (hue >= 0 && hue < 60)
+        {
+            _r = c, _g = x, _b = 0;
+        }
+        else if (hue >= 60 && hue < 120)
+        {
+            _r = x, _g = c, _b = 0;
+        }
+        else if (hue >= 120 && hue < 180)
+        {
+            _r = 0, _g = c, _b = x;
+        }
+        else if (hue >= 180 && hue < 240)
+        {
+            _r = 0, _g = x, _b = c;
+        }
+        else if (hue >= 240 && hue < 300)
+        {
+            _r = x, _g = 0, _b = c;
+        }
+        else
+        {
+            _r = c, _g = 0, _b = x;
+        }
+
+        this->r = (_r + m) * 255;
+        this->g = (_g + m) * 255;
+        this->b = (_b + m) * 255;
+    }
+
 } Pixel;
 
 typedef struct PixelFilter
@@ -66,25 +108,11 @@ typedef struct PixelFilter
     float filter[3];
 } PixelFilter;
 
-uint8_t colorIndex = 0;
-#define COLOR_COUNT 6
-
 /* Adds a random value to a random pixel in the given buffer */
 Pixel dripVal;
 Pixel *drip(Pixel *p, double intensity)
 {
-    const char colors[COLOR_COUNT][3] = {{255, 0, 0},
-                                         {0, 255, 0},
-                                         {0, 0, 255},
-                                         {255, 255, 0},
-                                         {0, 255, 255},
-                                         {255, 0, 255}};
-
-    colorIndex++;
-    if (colorIndex == COLOR_COUNT)
-        colorIndex = 0;
-    dripVal.setRGB(&(colors[colorIndex][0]));
-    dripVal.fade(intensity);
+    dripVal.setHSV(random(360), 1.0, intensity);
     p->combine(&dripVal, 1.0);
     return &dripVal;
 }
@@ -120,7 +148,7 @@ void render(Pixel *buffer, size_t size, Adafruit_NeoPixel *strip)
     strip->show();
 }
 
-PixelFilter blur1 = {3, {0.1, .65, 0.1}};
+PixelFilter blur1 = {3, {0.15, .65, 0.15}};
 
 Pixel bufferA[LED_COUNT];
 Pixel bufferB[LED_COUNT];
@@ -159,7 +187,7 @@ void loop()
 {
     MidiStatusMessage *statusMsg = &(midiInput.statusMsg);
 
-    bool didRead = midiInput.readNextPendingEvent();
+    bool didRead = midiInput.readPendingEvent();
     //Read a note-on and the velocity is not zero
     if (didRead)
     {
@@ -172,7 +200,7 @@ void loop()
                 Pixel *p = backBuffer + position;
                 double velocity = statusMsg->velocity();
                 //Compress the the intensity a bit
-                double intensity = (0.5 + (velocity / 127.0)) / 1.5;
+                double intensity = velocity / 127.0;
                 Pixel *dripVal = drip(p, intensity);
 
                 //The active notes array is use to control the sustain duration
@@ -196,7 +224,7 @@ void loop()
 
     for (int i = 0; i < LED_COUNT; i++)
     {
-        double fadeVal = midiInput.sustainOn ? 0.99 : 0.97;
+        double fadeVal = midiInput.sustainOn ? 0.985 : 0.976;
         activeNotes[i].fade(fadeVal); //More magic.  This is quite sensitive.
         Pixel *p = backBuffer + i;
         p->combine(activeNotes + i, 1.0);
